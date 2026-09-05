@@ -2,5 +2,8 @@
 __pycache__/
 *.pyc
 .env
+.venv/
 .ipynb_checkpoints/
 .pytest_cache/
+ground_truth_output.json
+data/raw/

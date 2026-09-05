@@ -1,0 +1,703 @@
+[
+  {
+    "id": "q01",
+    "question": "What was total revenue by month?",
+    "sql_file": "sql/analytical_queries.sql#Q1",
+    "expected_metric": "revenue_by_month",
+    "expected_value": [
+      {
+        "month": "2016-09-01",
+        "revenue": 134.97
+      },
+      {
+        "month": "2016-10-01",
+        "revenue": 40325.11
+      },
+      {
+        "month": "2016-12-01",
+        "revenue": 10.9
+      },
+      {
+        "month": "2017-01-01",
+        "revenue": 111798.36
+      },
+      {
+        "month": "2017-02-01",
+        "revenue": 234223.4
+      },
+      {
+        "month": "2017-03-01",
+        "revenue": 359198.85
+      },
+      {
+        "month": "2017-04-01",
+        "revenue": 340669.68
+      },
+      {
+        "month": "2017-05-01",
+        "revenue": 489338.25
+      },
+      {
+        "month": "2017-06-01",
+        "revenue": 421923.37
+      },
+      {
+        "month": "2017-07-01",
+        "revenue": 481604.52
+      },
+      {
+        "month": "2017-08-01",
+        "revenue": 554699.7
+      },
+      {
+        "month": "2017-09-01",
+        "revenue": 607399.67
+      },
+      {
+        "month": "2017-10-01",
+        "revenue": 648247.65
+      },
+      {
+        "month": "2017-11-01",
+        "revenue": 987765.37
+      },
+      {
+        "month": "2017-12-01",
+        "revenue": 726033.19
+      },
+      {
+        "month": "2018-01-01",
+        "revenue": 924645.0
+      },
+      {
+        "month": "2018-02-01",
+        "revenue": 826437.13
+      },
+      {
+        "month": "2018-03-01",
+        "revenue": 953356.25
+      },
+      {
+        "month": "2018-04-01",
+        "revenue": 973534.09
+      },
+      {
+        "month": "2018-05-01",
+        "revenue": 977544.69
+      },
+      {
+        "month": "2018-06-01",
+        "revenue": 856077.86
+      },
+      {
+        "month": "2018-07-01",
+        "revenue": 867953.46
+      },
+      {
+        "month": "2018-08-01",
+        "revenue": 838576.64
+      }
+    ],
+    "assumptions": [
+      "revenue = SUM(order_items.price)",
+      "restricted to order_status = 'delivered'",
+      "freight excluded from revenue"
+    ],
+    "notes": "Confirmed complete: 23 months, Sep 2016 - Aug 2018. Nov 2017 spike (Black Friday) matches Q7. Series ends Aug 2018 due to delivery-status lag near dataset boundary, not a data bug. May->June 2018 dip (-12.4% MoM) has no seasonal driver and overlaps Q9 anomaly days (2018-06-30, 2018-07-07) -- candidate period for Q10."
+  },
+  {
+    "id": "q02",
+    "question": "Which products generated the highest revenue?",
+    "sql_file": "sql/analytical_queries.sql#Q2",
+    "expected_metric": "top_products_by_revenue",
+    "expected_value": [
+      {
+        "product_id": "bb50f2e236e5eea0100680137654686c",
+        "category": "health_beauty",
+        "revenue": 63560.0,
+        "orders_count": 186
+      },
+      {
+        "product_id": "6cdd53843498f92890544667809f1595",
+        "category": "health_beauty",
+        "revenue": 53652.3,
+        "orders_count": 148
+      },
+      {
+        "product_id": "d6160fb7873f184099d9bc95e30376af",
+        "category": "computers",
+        "revenue": 45949.35,
+        "orders_count": 33
+      },
+      {
+        "product_id": "d1c427060a0f73f6b889a5c7c61f2ac4",
+        "category": "computers_accessories",
+        "revenue": 45620.56,
+        "orders_count": 313
+      },
+      {
+        "product_id": "99a4788cb24856965c36a24e339b6058",
+        "category": "bed_bath_table",
+        "revenue": 42049.66,
+        "orders_count": 456
+      },
+      {
+        "product_id": "3dd2a17168ec895c781a9191c1e95ad7",
+        "category": "computers_accessories",
+        "revenue": 40782.8,
+        "orders_count": 253
+      },
+      {
+        "product_id": "25c38557cf793876c5abdd5931f922db",
+        "category": "baby",
+        "revenue": 38907.32,
+        "orders_count": 38
+      },
+      {
+        "product_id": "5f504b3a1c75b73d6151be81eb05bdc9",
+        "category": "cool_stuff",
+        "revenue": 37733.9,
+        "orders_count": 63
+      },
+      {
+        "product_id": "53b36df67ebb7c41585e8d54d6772e08",
+        "category": "watches_gifts",
+        "revenue": 37454.63,
+        "orders_count": 304
+      },
+      {
+        "product_id": "aca2eb7d00ea1a7b8ebd4e68314663af",
+        "category": "furniture_decor",
+        "revenue": 37104.3,
+        "orders_count": 425
+      },
+      {
+        "product_id": "e0d64dcfaa3b6db5c54ca298ae101d05",
+        "category": "watches_gifts",
+        "revenue": 31621.82,
+        "orders_count": 193
+      },
+      {
+        "product_id": "d285360f29ac7fd97640bf0baef03de0",
+        "category": "watches_gifts",
+        "revenue": 30573.91,
+        "orders_count": 118
+      },
+      {
+        "product_id": "7a10781637204d8d10485c71a6108a2e",
+        "category": "watches_gifts",
+        "revenue": 30044.5,
+        "orders_count": 140
+      },
+      {
+        "product_id": "f1c7f353075ce59d8a6f3cf58f419c9c",
+        "category": "bed_bath_table",
+        "revenue": 29792.36,
+        "orders_count": 149
+      },
+      {
+        "product_id": "f819f0c84a64f02d3a5606ca95edd272",
+        "category": "watches_gifts",
+        "revenue": 28451.58,
+        "orders_count": 44
+      },
+      {
+        "product_id": "588531f8ec37e7d5ff5b7b22ea0488f8",
+        "category": "computers",
+        "revenue": 28291.99,
+        "orders_count": 19
+      },
+      {
+        "product_id": "422879e10f46682990de24d770e7f83d",
+        "category": "garden_tools",
+        "revenue": 26577.22,
+        "orders_count": 352
+      },
+      {
+        "product_id": "16c4e87b98a9370a9cbc3a4658a3f45b",
+        "category": "musical_instruments",
+        "revenue": 25034.0,
+        "orders_count": 13
+      },
+      {
+        "product_id": "a62e25e09e05e6faf31d90c6ec1aa3d1",
+        "category": "watches_gifts",
+        "revenue": 23835.0,
+        "orders_count": 170
+      },
+      {
+        "product_id": "5a848e4ab52fd5445cdc07aab1c40e48",
+        "category": null,
+        "revenue": 23368.1,
+        "orders_count": 187
+      }
+    ],
+    "assumptions": [
+      "revenue = SUM(order_items.price), delivered orders only",
+      "ranked at product_id granularity, not category"
+    ],
+    "notes": "Confirmed complete: top 20 of 20. Top product is health_beauty (R$63,560). watches_gifts appears 6 times in the top 20 -- a single-category concentration worth flagging in interpretation. Row 20 has category=null; cross-check this product_id against the 610 products with missing category_name from Phase 1 inspection notes."
+  },
+  {
+    "id": "q03",
+    "question": "Which region grew fastest?",
+    "sql_file": "sql/analytical_queries.sql#Q3",
+    "expected_metric": "yoy_revenue_growth_by_state",
+    "expected_value": [
+      {
+        "customer_state": "RN",
+        "revenue_2017": 16173.68,
+        "revenue_2018": 46296.67,
+        "pct_growth": 186.2
+      },
+      {
+        "customer_state": "SP",
+        "revenue_2017": 1079261.66,
+        "revenue_2018": 2919328.17,
+        "pct_growth": 170.5
+      },
+      {
+        "customer_state": "DF",
+        "revenue_2017": 62099.36,
+        "revenue_2018": 164284.94,
+        "pct_growth": 164.6
+      },
+      {
+        "customer_state": "PE",
+        "revenue_2017": 51046.32,
+        "revenue_2018": 134193.9,
+        "pct_growth": 162.9
+      },
+      {
+        "customer_state": "ES",
+        "revenue_2017": 58087.41,
+        "revenue_2018": 152031.09,
+        "pct_growth": 161.7
+      },
+      {
+        "customer_state": "MG",
+        "revenue_2017": 331969.32,
+        "revenue_2018": 840172.2,
+        "pct_growth": 153.1
+      },
+      {
+        "customer_state": "PB",
+        "revenue_2017": 24761.96,
+        "revenue_2018": 62565.92,
+        "pct_growth": 152.7
+      },
+      {
+        "customer_state": "SC",
+        "revenue_2017": 114575.86,
+        "revenue_2018": 281524.74,
+        "pct_growth": 145.7
+      },
+      {
+        "customer_state": "MA",
+        "revenue_2017": 23638.95,
+        "revenue_2018": 57461.28,
+        "pct_growth": 143.1
+      },
+      {
+        "customer_state": "PR",
+        "revenue_2017": 158256.91,
+        "revenue_2018": 376623.19,
+        "pct_growth": 138.0
+      }
+    ],
+    "assumptions": [
+      "region = customer_state",
+      "growth = 2017 vs 2018 revenue, Jan-Aug only (both years complete)",
+      "states with < 20 orders in 2017 excluded to avoid noise"
+    ],
+    "notes": "Confirmed complete: no LIMIT in query, so this is every state clearing the >=20-orders-in-2017 threshold -- only 10 of Brazil's 27 states/DF qualify, reflecting how concentrated Olist's 2017 order volume was outside SP/major states. Top grower is RN at +186.2%, though its absolute revenue (R$16k -> R$46k) is small -- worth noting the growth leader and the revenue leader (SP) are different states."
+  },
+  {
+    "id": "q04",
+    "question": "Who were the top 10 customers by revenue?",
+    "sql_file": "sql/analytical_queries.sql#Q4",
+    "expected_metric": "top_customers_by_revenue",
+    "expected_value": [
+      {
+        "customer_unique_id": "0a0a92112bd4c708ca5fde585afaa872",
+        "revenue": 13440.0,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "da122df9eeddfedc1dc1f5349a1a690c",
+        "revenue": 7388.0,
+        "order_count": 2
+      },
+      {
+        "customer_unique_id": "763c8b1c9c68a0229c42c9fc6f662b93",
+        "revenue": 7160.0,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "dc4802a71eae9be1dd28f5d788ceb526",
+        "revenue": 6735.0,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "459bef486812aa25204be022145caa62",
+        "revenue": 6729.0,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "ff4159b92c40ebe40454e3e6a7c35ed6",
+        "revenue": 6499.0,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "4007669dec559734d6f53e029e360987",
+        "revenue": 5934.6,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "eebb5dda148d3893cdaf5b5ca3040ccb",
+        "revenue": 4690.0,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "48e1ac109decbb87765a3eade6854098",
+        "revenue": 4590.0,
+        "order_count": 1
+      },
+      {
+        "customer_unique_id": "a229eba70ec1c2abef51f04987deb7a5",
+        "revenue": 4400.0,
+        "order_count": 1
+      }
+    ],
+    "assumptions": [
+      "grouped by customer_unique_id, not customer_id",
+      "delivered orders only"
+    ],
+    "notes": "Confirmed complete: 10 of 10, matches LIMIT 10. Notable finding: 8 of the top 10 customers by revenue placed only 1 order -- top revenue here reflects single high-ticket purchases, not repeat loyalty. Any future LTV/customer-value work built on this table should account for order_count, not just total revenue."
+  },
+  {
+    "id": "q05",
+    "question": "Which products experienced declining sales?",
+    "sql_file": "sql/analytical_queries.sql#Q5",
+    "expected_metric": "declining_products_h2_2017_vs_h1_2018",
+    "expected_value": [
+      {
+        "product_id": "d3c044bd42d84a79e3b0c42662806a48",
+        "revenue_h2_2017": 1953.0,
+        "revenue_h1_2018": 39.9,
+        "pct_change": -98.0
+      },
+      {
+        "product_id": "3db75f31b76375c502f64d550dcd1166",
+        "revenue_h2_2017": 861.3,
+        "revenue_h1_2018": 31.9,
+        "pct_change": -96.3
+      },
+      {
+        "product_id": "776ef0ee36e20757c513e64903f1fa8a",
+        "revenue_h2_2017": 2208.0,
+        "revenue_h1_2018": 98.0,
+        "pct_change": -95.6
+      },
+      {
+        "product_id": "03e1c946c0ddfc58724ff262aef08dff",
+        "revenue_h2_2017": 248.4,
+        "revenue_h1_2018": 13.61,
+        "pct_change": -94.5
+      },
+      {
+        "product_id": "ca38c039b717207dec906f4fa9a21db7",
+        "revenue_h2_2017": 3457.67,
+        "revenue_h1_2018": 198.99,
+        "pct_change": -94.2
+      },
+      {
+        "product_id": "b623b7cb05ee3248fbe4a6ecbeed79a4",
+        "revenue_h2_2017": 4139.56,
+        "revenue_h1_2018": 283.6,
+        "pct_change": -93.1
+      },
+      {
+        "product_id": "af0a917aec9cea3b353ece61a8825326",
+        "revenue_h2_2017": 1348.5,
+        "revenue_h1_2018": 99.9,
+        "pct_change": -92.6
+      },
+      {
+        "product_id": "ac8e7cf3a658f63dc68dd7f3b8b5f97b",
+        "revenue_h2_2017": 1392.0,
+        "revenue_h1_2018": 107.0,
+        "pct_change": -92.3
+      },
+      {
+        "product_id": "8338cef8355d238f43711dcb9c0657b2",
+        "revenue_h2_2017": 596.7,
+        "revenue_h1_2018": 45.9,
+        "pct_change": -92.3
+      },
+      {
+        "product_id": "31639956e7fac87ecfd9d608040638bd",
+        "revenue_h2_2017": 924.7,
+        "revenue_h1_2018": 70.9,
+        "pct_change": -92.3
+      },
+      {
+        "product_id": "4ebab6a2135a2477b657bda38646b64b",
+        "revenue_h2_2017": 331.14,
+        "revenue_h1_2018": 25.9,
+        "pct_change": -92.2
+      },
+      {
+        "product_id": "17823ffd2de8234f0e885a71109613a4",
+        "revenue_h2_2017": 2749.9,
+        "revenue_h1_2018": 219.99,
+        "pct_change": -92.0
+      },
+      {
+        "product_id": "a8fe47ad6f852f93cc92c7b408687de3",
+        "revenue_h2_2017": 1822.5,
+        "revenue_h1_2018": 145.8,
+        "pct_change": -92.0
+      },
+      {
+        "product_id": "3516632e8f52b679ff83d1665ecc990e",
+        "revenue_h2_2017": 910.8,
+        "revenue_h1_2018": 75.9,
+        "pct_change": -91.7
+      },
+      {
+        "product_id": "fe6a9515d655fa7936b8a7c841039f34",
+        "revenue_h2_2017": 8996.4,
+        "revenue_h1_2018": 749.7,
+        "pct_change": -91.7
+      },
+      {
+        "product_id": "fe01b643060a6446e59f58e3021e66b3",
+        "revenue_h2_2017": 5965.6,
+        "revenue_h1_2018": 493.0,
+        "pct_change": -91.7
+      },
+      {
+        "product_id": "ef8856db4e302ad33dc4d91e40f7593c",
+        "revenue_h2_2017": 1140.59,
+        "revenue_h1_2018": 94.9,
+        "pct_change": -91.7
+      },
+      {
+        "product_id": "5f504b3a1c75b73d6151be81eb05bdc9",
+        "revenue_h2_2017": 29433.0,
+        "revenue_h1_2018": 2510.6,
+        "pct_change": -91.5
+      },
+      {
+        "product_id": "6f33a4a09ae1180a0ee1ff4682b2d21f",
+        "revenue_h2_2017": 1679.88,
+        "revenue_h1_2018": 149.99,
+        "pct_change": -91.1
+      },
+      {
+        "product_id": "0db4869ac8a908414823d44d742f5ba3",
+        "revenue_h2_2017": 2178.89,
+        "revenue_h1_2018": 192.99,
+        "pct_change": -91.1
+      }
+    ],
+    "assumptions": [
+      "compares H2 2017 vs H1 2018 revenue per product",
+      "only products with revenue > 0 in both windows are eligible"
+    ],
+    "notes": "Confirmed complete: 20 of 20, matches LIMIT 20. Steepest decline is -98.0%. Cross-reference: product_id 5f504b3a1c75b73d6151be81eb05bdc9 is also #8 in Q2's top-revenue list overall (cool_stuff, R$37,733.90 lifetime) but dropped -91.5% H2 2017 -> H1 2018 -- a product that looks strong in aggregate but is actually in steep decline. Good illustrative example that aggregate revenue rankings can hide trend direction."
+  },
+  {
+    "id": "q06",
+    "question": "What was the average order value?",
+    "sql_file": "sql/analytical_queries.sql#Q6",
+    "expected_metric": "avg_order_value",
+    "expected_value": 137.04,
+    "assumptions": [
+      "order value = SUM(price) per order_id, freight excluded",
+      "delivered orders only"
+    ],
+    "notes": "Confirmed complete (single scalar). Avg order value = 137.04 (BRL)."
+  },
+  {
+    "id": "q07",
+    "question": "Which month had the highest revenue?",
+    "sql_file": "sql/analytical_queries.sql#Q7",
+    "expected_metric": "peak_revenue_month",
+    "expected_value": {
+      "month": "2017-11-01",
+      "revenue": 987765.37
+    },
+    "assumptions": [
+      "same revenue definition as Q1"
+    ],
+    "notes": "Confirmed complete (single row). Peak month is Nov 2017 - consistent with Brazil's Black Friday timing."
+  },
+  {
+    "id": "q08",
+    "question": "Which category had the highest average order value?",
+    "sql_file": "sql/analytical_queries.sql#Q8",
+    "expected_metric": "avg_item_value_by_category",
+    "expected_value": [
+      {
+        "category": "computers",
+        "avg_item_value": 1098.92,
+        "line_item_count": 199
+      },
+      {
+        "category": "small_appliances_home_oven_and_coffee",
+        "avg_item_value": 638.21,
+        "line_item_count": 73
+      },
+      {
+        "category": "home_appliances_2",
+        "avg_item_value": 467.33,
+        "line_item_count": 231
+      },
+      {
+        "category": "agro_industry_and_commerce",
+        "avg_item_value": 342.55,
+        "line_item_count": 206
+      },
+      {
+        "category": "musical_instruments",
+        "avg_item_value": 283.13,
+        "line_item_count": 651
+      },
+      {
+        "category": "small_appliances",
+        "avg_item_value": 277.74,
+        "line_item_count": 658
+      },
+      {
+        "category": "fixed_telephony",
+        "avg_item_value": 216.92,
+        "line_item_count": 255
+      },
+      {
+        "category": "construction_tools_safety",
+        "avg_item_value": 211.88,
+        "line_item_count": 183
+      },
+      {
+        "category": "watches_gifts",
+        "avg_item_value": 199.04,
+        "line_item_count": 5859
+      },
+      {
+        "category": "furniture_bedroom",
+        "avg_item_value": 184.97,
+        "line_item_count": 103
+      }
+    ],
+    "assumptions": [
+      "replaces the original profit-margin question \u2014 Olist has no cost data",
+      "'value' = avg price per line item attributed to the category, not full multi-category order totals",
+      "categories with < 20 line items excluded"
+    ],
+    "notes": "Confirmed complete: 10 of 10, matches LIMIT 10. computers leads at R$1,098.92/item but low volume (199 line items) -- a low-volume, high-ticket category. watches_gifts, which dominated Q2's top-revenue-by-product list (6 of the top 20 products), ranks 9th here at R$199.04/item with 5,859 line items -- its revenue comes from volume, not per-unit price. Useful paired finding between Q2 and Q8."
+  },
+  {
+    "id": "q09",
+    "question": "Are there unusual sales drops?",
+    "sql_file": "sql/analytical_queries.sql#Q9",
+    "expected_metric": "anomalous_low_revenue_days",
+    "expected_value": [
+      {
+        "day": "2017-06-21",
+        "revenue": 6135.75,
+        "rolling_avg_30d": 15449.14
+      },
+      {
+        "day": "2017-08-26",
+        "revenue": 9797.9,
+        "rolling_avg_30d": 16922.65
+      },
+      {
+        "day": "2018-06-30",
+        "revenue": 15309.88,
+        "rolling_avg_30d": 28838.31
+      },
+      {
+        "day": "2018-07-07",
+        "revenue": 8816.76,
+        "rolling_avg_30d": 28027.92
+      },
+      {
+        "day": "2018-08-22",
+        "revenue": 20247.24,
+        "rolling_avg_30d": 36051.04
+      },
+      {
+        "day": "2018-08-23",
+        "revenue": 17030.87,
+        "rolling_avg_30d": 35416.07
+      },
+      {
+        "day": "2018-08-24",
+        "revenue": 9440.71,
+        "rolling_avg_30d": 34653.67
+      },
+      {
+        "day": "2018-08-25",
+        "revenue": 10599.41,
+        "rolling_avg_30d": 33628.92
+      },
+      {
+        "day": "2018-08-26",
+        "revenue": 8070.71,
+        "rolling_avg_30d": 32824.09
+      },
+      {
+        "day": "2018-08-27",
+        "revenue": 5345.91,
+        "rolling_avg_30d": 32156.29
+      },
+      {
+        "day": "2018-08-28",
+        "revenue": 3673.91,
+        "rolling_avg_30d": 31507.38
+      },
+      {
+        "day": "2018-08-29",
+        "revenue": 1546.04,
+        "rolling_avg_30d": 30648.05
+      }
+    ],
+    "assumptions": [
+      "flags days where revenue < trailing 30-day mean - 2 stddev",
+      "first 30 days of the dataset excluded (no trailing window yet)"
+    ],
+    "notes": "Confirmed complete: no LIMIT in query, 12 flagged days total. Two distinct clusters: (1) isolated single-day dips in 2017 (Jun 21, Aug 26) -- likely normal noise. (2) 2018-06-30 and 2018-07-07 -- corroborates the May->June 2018 monthly dip from Q1, selected as the Q10 investigation period. (3) 2018-08-22 through 2018-08-29 -- a steadily monotonic decline (20247 -> 1546) over the last 8 days of the dataset. This is almost certainly a dataset-boundary artifact (delivered-status lag near the extraction cutoff), not a genuine demand drop -- consistent with the Aug 2018 caution already noted on Q1. Should NOT be used as a Q10 candidate."
+  },
+  {
+    "id": "q10",
+    "question": "Why did revenue decline in a selected period?",
+    "sql_file": "sql/analytical_queries.sql#Q10",
+    "expected_metric": "revenue_decline_explanation",
+    "expected_value": "Revenue fell -12.4% (R$977,545 -> R$856,078) from May to June 2018. This is a genuine demand-side decline, not a data or delivery-status artifact: total orders placed (any status) fell -10.3% in the same window, while the delivered-order completion rate stayed flat (~98%). The decline is best explained by Brazil's nationwide truckers' strike (May 21 - June 1, 2018), which blocked roads across most states, disrupted retail supply chains, and caused Sao Paulo to declare a state of emergency; consumer confidence indicators continued declining into June even as industrial activity began recovering. Supporting evidence: (1) the decline is broad-based across ~10 unrelated categories (watches_gifts, garden_tools, sports_leisure, furniture_decor, cool_stuff, toys, housewares, computers_accessories, office_furniture, small_appliances), consistent with a macro/logistics shock rather than one product or category failing; (2) the decline is geographically concentrated -- Sao Paulo and Rio de Janeiro alone account for ~85% of the regional revenue drop, matching the strike's epicenter; (3) garden_tools, a bulky freight-dependent category, fell below its own Jan-Mar 2018 baseline in June before recovering in July, consistent with delivery disruption rather than seasonal demand. Two caveats prevent this from being a single clean story: watches_gifts' apparent decline is partly a statistical mirage -- May was inflated by Mother's Day gift buying (mid-May in Brazil), so June's value is actually close to the March-April baseline once the spike is accounted for. And sports_leisure's decline began in March, predating the strike, so it likely has a separate, unidentified cause. Overall verdict: the truckers' strike is the best-supported explanation for the broad, SP/RJ-concentrated, freight-sensitive portion of the June 2018 revenue dip, but it does not explain every contributing category equally.",
+    "assumptions": [
+      "diagnostic/narrative question, not a single-query scalar answer",
+      "period should be chosen from an actual drop found via Q1 or Q9",
+      "answer should cite category/region/order-status breakdown, not just restate the drop",
+      "period selected using Q1 (monthly series) + Q9 (anomaly days) as triggers, per the original question design",
+      "causal attribution uses an external documented event (the strike), not just internal correlation, to avoid overfitting a story to the data"
+    ],
+    "notes": "This is the hardest ground-truth entry to write and the best test of the eventual agent's reasoning. Pick the specific period after Q1/Q9 results are in, then write a 2-4 sentence evidence-backed explanation here.",
+    "period_selected": {
+      "decline": "2018-05 to 2018-06",
+      "baseline_comparison": "2018-02 to 2018-04"
+    },
+    "supporting_evidence": {
+      "order_volume": "Total orders placed fell -10.3% (6,873 -> 6,167); delivered completion rate stayed ~98% (rules out status/delivery-lag artifact)",
+      "category_breakdown": "~10 categories account for 75% of the category-level decline; broad-based, not single-product",
+      "regional_breakdown": "SP + RJ = ~85% of regional decline (SP -21.3%, RJ -20.6%)",
+      "external_event": "Brazil nationwide truckers' strike, May 21 - June 1, 2018 (source: USDA GAIN report, greenfleetmagazine.com)",
+      "caveats": [
+        "watches_gifts decline is partly a Mother's Day baseline effect, not pure strike impact",
+        "sports_leisure decline predates the strike (began March 2018), separate unidentified cause"
+      ]
+    }
+  }
+]
