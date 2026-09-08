@@ -2,7 +2,7 @@
 __pycache__/
 *.pyc
 .env
-.venv/
+.env/
 .ipynb_checkpoints/
 .pytest_cache/
 ground_truth_output.json
