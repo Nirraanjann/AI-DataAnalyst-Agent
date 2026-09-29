@@ -14,6 +14,13 @@ itself (joins, filters, grouping, ordering) is untouched.
 Each function returns plain Python types (list[dict], float, dict),
 never raw SQLAlchemy Row objects, so this module is a clean boundary
 for whatever calls it next (tests today, an LLM tool call in Phase 3+).
+
+Phase 4 addition: get_revenue_by_category and get_revenue_by_region
+are NOT part of the original Q1-Q9 set. They were added to support
+chained investigation questions (e.g. "why did revenue decline in
+May-June 2018?") where the agent needs to break a period down by
+category or region after spotting a trend via get_monthly_revenue.
+Both take an arbitrary date range, unlike Q1-Q9's fixed date logic.
 """
 
 from datetime import date, datetime
@@ -307,4 +314,64 @@ _Q9_SQL = """
 def get_revenue_anomalies(engine: Engine) -> list[dict]:
     with engine.connect() as conn:
         result = conn.execute(text(_Q9_SQL))
+        return _rows_to_dicts(result)
+
+
+# ------------------------------------------------------------
+# NEW (Phase 4). Revenue by category, for an arbitrary date range.
+# Not one of the original Q1-Q9 -- added to let the agent break a
+# period down by category after spotting a trend via
+# get_monthly_revenue (e.g. investigating a revenue dip).
+# ------------------------------------------------------------
+_CATEGORY_BREAKDOWN_SQL = """
+    SELECT
+        COALESCE(ct.product_category_name_english, p.product_category_name) AS category,
+        SUM(oi.price) AS revenue
+    FROM orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN products p ON p.product_id = oi.product_id
+    LEFT JOIN category_translation ct ON ct.product_category_name = p.product_category_name
+    WHERE o.order_status = 'delivered'
+      AND o.order_purchase_timestamp >= :start_date
+      AND o.order_purchase_timestamp < (CAST(:end_date AS date) + INTERVAL '1 day')
+    GROUP BY category
+    ORDER BY revenue DESC;
+"""
+
+
+def get_revenue_by_category(engine: Engine, start_date: str, end_date: str) -> list[dict]:
+    with engine.connect() as conn:
+        result = conn.execute(
+            text(_CATEGORY_BREAKDOWN_SQL),
+            {"start_date": start_date, "end_date": end_date},
+        )
+        return _rows_to_dicts(result)
+
+
+# ------------------------------------------------------------
+# NEW (Phase 4). Revenue by customer region (state), for an
+# arbitrary date range. Same purpose as get_revenue_by_category --
+# not one of the original Q1-Q9.
+# ------------------------------------------------------------
+_REGION_BREAKDOWN_SQL = """
+    SELECT
+        c.customer_state AS state,
+        SUM(oi.price) AS revenue
+    FROM orders o
+    JOIN order_items oi ON oi.order_id = o.order_id
+    JOIN customers c ON c.customer_id = o.customer_id
+    WHERE o.order_status = 'delivered'
+      AND o.order_purchase_timestamp >= :start_date
+      AND o.order_purchase_timestamp < (CAST(:end_date AS date) + INTERVAL '1 day')
+    GROUP BY c.customer_state
+    ORDER BY revenue DESC;
+"""
+
+
+def get_revenue_by_region(engine: Engine, start_date: str, end_date: str) -> list[dict]:
+    with engine.connect() as conn:
+        result = conn.execute(
+            text(_REGION_BREAKDOWN_SQL),
+            {"start_date": start_date, "end_date": end_date},
+        )
         return _rows_to_dicts(result)

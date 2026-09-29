@@ -2,15 +2,67 @@
 app/agent/nodes.py
 
 LangGraph node functions for the Phase 4 agent. None of these rewrite
-router.py, tool_definitions.py, or analyst_queries.py -- they call
-those as-is, per the Phase 4 handoff's DO NOT CHANGE list.
+router.py's route_question() signature/behavior, analyst_queries.py's
+existing Q1-Q9 functions, or tool_definitions.py's TOOLS/REGISTRY
+structure for the original 11 entries -- Phase 5 only ADDED two new
+entries (get_schema, run_sql_query) to that file, per the Phase 4
+handoff's DO NOT CHANGE list.
 
 Multi-step tool calling (needed for q10-style "why did revenue
 decline" questions) is achieved by feeding route_question() a richer
 prompt string on iterations after the first, not by changing
 route_question()'s signature or behavior.
+
+Update (Phase 4): added comparison-awareness to the routing prompt and
+the decide node. A period-over-period comparison question (e.g. "why
+did revenue decline from May to June?") was being answered with a
+SINGLE tool call using a combined date range spanning both periods,
+which can only show a total, not a comparison. Both the routing prompt
+(so a second, per-period call gets requested) and the decide node's
+YES/NO check (so a merged-range result isn't mistaken for "enough
+evidence") needed the fix -- fixing only one would still cut the loop
+short.
+
+Update (Phase 5): two changes to support the new SQL fallback tools.
+(1) tool_step_node now routes get_schema/run_sql_query calls to the
+read-only DB engine (connection.get_readonly_engine()) instead of the
+main engine, so the DB-level restriction from
+scripts/create_readonly_role.sql actually applies -- every other tool
+still uses the main engine, unchanged. (2) the comparison-question
+logic (both the routing prompt's comparison_note and the decide node's
+Check 2) was generalized: it used to assume a comparison could only be
+satisfied by two separate per-period calls to the same breakdown tool.
+Now a single run_sql_query result is also accepted as sufficient, as
+long as that result itself contains a separate, identifiable figure
+for each period being compared (not just a combined total) --
+otherwise the decide node would wrongly force a second, redundant call
+even when one well-written SQL query already answered the comparison
+directly.
+
+Update (Phase 5, retest fix): raw tool results are now sanitized right
+after a successful call, converting any Decimal values (psycopg2's
+return type for Postgres NUMERIC/DECIMAL columns -- returned by both
+run_sql_query and the original Phase 2 functions) to plain floats.
+Without this, decide_node and answer_node's prompts showed literal
+text like "Decimal('111512.94')" in the final answer, since Python's
+default str()/repr of a Decimal includes the class name. Sanitizing
+once here, right after the tool call, means every downstream node
+(decide, answer) automatically sees clean numbers with no other
+changes needed.
+
+Update (Phase 5, deterministic get_schema enforcement): two separate
+retests saw the LLM attempt run_sql_query with guessed (wrong, from
+the original Kaggle CSV filenames) table names before ever calling
+get_schema, despite the router prompt explicitly saying to call
+get_schema first. It self-corrected via the resulting DB error both
+times, but at the cost of a wasted step each time. tool_step_node now
+tracks state["schema_fetched"] and rejects a premature run_sql_query
+call outright (no DB round-trip, no psycopg2 error text) with a clear
+instructive message instead, rather than relying on the LLM to follow
+the prompt's instruction on its own.
 """
 
+from decimal import Decimal
 from typing import Callable
 
 from sqlalchemy.engine import Engine
@@ -18,7 +70,31 @@ from sqlalchemy.engine import Engine
 from app.agent.router import route_question
 from app.agent.state import GraphState, ToolCallRecord
 from app.agent.tool_definitions import REGISTRY, TOOLS
+from app.database.connection import get_readonly_engine
 from app.services.llm_client import create_message
+
+# Phase 5: these two tools run LLM-generated/schema-introspection code
+# against the database and should use the restricted read-only engine,
+# never the main one -- every other tool in REGISTRY keeps using the
+# main engine passed into make_tool_step_node.
+SQL_FALLBACK_TOOL_NAMES = {"get_schema", "run_sql_query"}
+
+
+def _sanitize_result(value):
+    """Recursively converts Decimal values to float so downstream
+    prompts (decide_node, answer_node) show plain numbers instead of
+    Python's Decimal('...') repr. Applied once, right after a tool call
+    succeeds, so every consumer of state["tool_calls"] sees already-
+    clean data -- no changes needed in decide_node or answer_node
+    themselves."""
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, dict):
+        return {k: _sanitize_result(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_result(v) for v in value]
+    return value
+
 
 # ---------------------------------------------------------------------------
 # Planning / disambiguation node
@@ -133,7 +209,22 @@ def _build_routing_prompt(state: GraphState) -> str:
     question was tried and caused a real regression (q08 got limit=1
     injected on an ordinary single-topic question) -- gating it behind
     an explicit planning-node decision, rather than prose disclaimers,
-    is the fix."""
+    is the fix.
+
+    The comparison_note below addresses a separate, later-discovered
+    gap: a period-over-period comparison question (e.g. "why did
+    revenue decline from May to June?") was being answered with ONE
+    tool call using a combined date range spanning both periods --
+    which can only show a total, not a comparison. This note is always
+    included on loop iterations (not gated behind is_compound) since a
+    comparison isn't a compound-topic question, it's a single-topic
+    question needing evidence that separates the two periods.
+
+    Phase 5 update: the note now also offers run_sql_query as an
+    alternative to a second per-period call, since a single SQL query
+    can compute both periods' totals and the difference directly --
+    closing the comparison-question gap without needing answer_node to
+    aggregate anything itself."""
     framing = (
         "You are one step in a multi-step process that can call more "
         "than one tool across several turns, because the ORIGINAL "
@@ -159,8 +250,23 @@ def _build_routing_prompt(state: GraphState) -> str:
     evidence_block = "\n".join(evidence_lines)
 
     prefix = f"{framing}\n\n" if state.get("is_compound") else ""
+    comparison_note = (
+        "If the original question compares two specific time periods "
+        "(e.g. month-over-month, before/after a date), check whether any "
+        "tool call above already gives you a separate, identifiable figure "
+        "for EACH period, or only a single combined figure spanning both "
+        "periods together. A combined range cannot show the difference "
+        "between the periods -- it only shows their total. If that's the "
+        "case here, you have two options: (a) call the same breakdown "
+        "tool again, restricted to just ONE of the specific periods, so "
+        "each period can be retrieved separately and then compared, or "
+        "(b) if no existing tool naturally does this, use run_sql_query "
+        "to write a single query that computes both periods' totals and "
+        "the difference between them directly.\n\n"
+    )
     return (
         f"{prefix}"
+        f"{comparison_note}"
         f"Original question: {state['question']}\n\n"
         f"Tool calls made so far:\n{evidence_block}\n\n"
         "Based on what's already known, what ADDITIONAL tool call (if "
@@ -195,12 +301,48 @@ def make_tool_step_node(engine: Engine) -> Callable[[GraphState], GraphState]:
             state["decline_reason"] = f"LLM selected unknown tool '{routing.tool_name}'."
             return state
 
+        # Phase 5: deterministic enforcement -- two separate retests saw
+        # the LLM attempt run_sql_query with guessed (wrong) table names
+        # before ever calling get_schema, despite the prompt telling it
+        # to call get_schema first. Reject here, with no DB round-trip,
+        # rather than relying on the LLM to remember the instruction.
+        if routing.tool_name == "run_sql_query" and not state.get("schema_fetched"):
+            state["tool_calls"].append(
+                ToolCallRecord(
+                    tool_name=routing.tool_name,
+                    tool_input=routing.tool_input,
+                    result={
+                        "error": (
+                            "You must call get_schema first to see the actual "
+                            "table and column names before writing SQL. Call "
+                            "get_schema now, then retry run_sql_query."
+                        )
+                    },
+                )
+            )
+            return state
+
+        # Phase 5: get_schema/run_sql_query execute against the
+        # restricted read-only role, never the main engine. Every other
+        # tool keeps using the main engine, unchanged from Phase 2/4.
+        tool_engine = (
+            get_readonly_engine() if routing.tool_name in SQL_FALLBACK_TOOL_NAMES else engine
+        )
+
         try:
-            result = func(engine, **routing.tool_input)
+            result = func(tool_engine, **routing.tool_input)
         except Exception as exc:  # noqa: BLE001 -- surface any tool failure to caller
             state["declined"] = True
             state["decline_reason"] = f"Tool execution failed: {exc}"
             return state
+
+        # Phase 5 retest fix: strip Decimal (psycopg2's NUMERIC type)
+        # down to float before this ever reaches a prompt -- otherwise
+        # decide_node/answer_node see literal "Decimal('...')" text.
+        result = _sanitize_result(result)
+
+        if routing.tool_name == "get_schema":
+            state["schema_fetched"] = True
 
         state["tool_calls"].append(
             ToolCallRecord(
@@ -225,13 +367,25 @@ DECIDE_SYSTEM_PROMPT = """You are deciding whether an analytics agent has \
 enough evidence to fully answer the user's ORIGINAL question, given the \
 tool results gathered so far.
 
-First check: does the original question have more than one distinct part \
+Check 1: does the original question have more than one distinct part \
 (e.g. "X, and separately Y")? If so, has a tool result already addressed \
 EACH part, or only some of them?
 
-Respond with exactly one word: YES if every distinct part of the original \
-question is now covered by a tool result, or NO if at least one part \
-still has no tool result addressing it."""
+Check 2: does the original question ask to COMPARE two specific time \
+periods (e.g. month-over-month, before/after a date)? A result is \
+sufficient only if it contains a separate, identifiable figure for EACH \
+period being compared -- this can come from two separate tool calls each \
+scoped to one period, OR from a single run_sql_query result that itself \
+returns each period's figure as its own distinct value (e.g. separate \
+rows or columns per period, or a total plus a difference). A tool result \
+computed over ONE combined date range spanning both periods, with no \
+per-period breakdown anywhere in it, is NOT sufficient -- it only shows \
+their total, not the difference.
+
+Respond with exactly one word: YES only if every distinct part of the \
+original question is covered, AND any implied period comparison has \
+per-period figures available (not just one merged-range total). Respond \
+NO otherwise."""
 
 
 def make_decide_node() -> Callable[[GraphState], GraphState]:

@@ -1,7 +1,7 @@
 """
 app/agent/tool_definitions.py
 
-Anthropic-shaped tool-use schemas for the 9 Phase 2 analyst functions,
+Anthropic-shaped tool-use schemas for the Phase 2 analyst functions,
 plus a name -> function registry so the router can dispatch a
 tool_use block straight into a Phase 2 call. llm_client.py converts
 these to Gemini's functionDeclaration format internally.
@@ -9,9 +9,22 @@ these to Gemini's functionDeclaration format internally.
 `engine` is never part of a tool's input_schema -- it's an internal
 dependency the router injects, not something the LLM should ever see
 or guess at.
+
+Phase 4 addition: get_revenue_by_category and get_revenue_by_region
+are not part of the original Q1-Q9 set. They exist to support chained
+investigation questions (e.g. "why did revenue decline in a given
+period") where the agent needs to break a specific date range down by
+category or region after spotting a trend via get_monthly_revenue.
+
+Phase 5 addition (hybrid architecture): get_schema and run_sql_query
+are the fallback path for questions that don't map to any of the 11
+functions above. Their descriptions explicitly tell the model to try
+the other tools first -- these two exist for genuine gaps, not as a
+shortcut around the deterministic tools the evaluation set depends on.
 """
 
 from app.tools import analyst_queries as q
+from app.tools import sql_query_tool as sql_tool
 
 TOOLS = [
     {
@@ -136,6 +149,95 @@ TOOLS = [
         ),
         "input_schema": {"type": "object", "properties": {}},
     },
+    {
+        "name": "get_revenue_by_category",
+        "description": (
+            "Revenue broken down by product category (delivered orders "
+            "only) for a specific date range you provide. Use this to "
+            "investigate WHERE a revenue change came from within a "
+            "period -- e.g. after spotting a monthly revenue dip via "
+            "get_monthly_revenue, use this on that same period to see "
+            "which categories drove it. Not useful without a concrete "
+            "date range already in mind."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "start_date": {
+                    "type": "string",
+                    "description": "Start of the date range, ISO format (YYYY-MM-DD), inclusive.",
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "End of the date range, ISO format (YYYY-MM-DD), inclusive.",
+                },
+            },
+            "required": ["start_date", "end_date"],
+        },
+    },
+    {
+        "name": "get_revenue_by_region",
+        "description": (
+            "Revenue broken down by customer state/region (delivered "
+            "orders only) for a specific date range you provide. Use "
+            "this to investigate WHERE a revenue change came from "
+            "within a period -- e.g. after spotting a monthly revenue "
+            "dip via get_monthly_revenue, use this on that same period "
+            "to see which regions drove it. Not useful without a "
+            "concrete date range already in mind."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "start_date": {
+                    "type": "string",
+                    "description": "Start of the date range, ISO format (YYYY-MM-DD), inclusive.",
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "End of the date range, ISO format (YYYY-MM-DD), inclusive.",
+                },
+            },
+            "required": ["start_date", "end_date"],
+        },
+    },
+    {
+        "name": "get_schema",
+        "description": (
+            "Returns the database's table and column names. Call this "
+            "ONLY if you've already decided none of the other tools "
+            "above can answer the question, and you're about to use "
+            "run_sql_query -- you need this first to know what columns "
+            "exist. Do not call this for questions the other tools "
+            "already cover."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "run_sql_query",
+        "description": (
+            "Runs a single, read-only SQL SELECT query you write "
+            "yourself. LAST RESORT: only use this if the question "
+            "genuinely cannot be answered by any of the other tools "
+            "above (for example, a direct numeric comparison across two "
+            "periods that needs one query to compute both totals and a "
+            "difference). Call get_schema first if you don't already "
+            "know the exact table/column names. Only SELECT (or WITH "
+            "... SELECT) statements are allowed -- DROP, DELETE, "
+            "UPDATE, INSERT, ALTER, TRUNCATE, CREATE, and similar are "
+            "rejected before execution. Results are capped at 500 rows."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "sql_query": {
+                    "type": "string",
+                    "description": "A single read-only SQL SELECT statement.",
+                }
+            },
+            "required": ["sql_query"],
+        },
+    },
 ]
 
 REGISTRY = {
@@ -148,4 +250,8 @@ REGISTRY = {
     "get_peak_revenue_month": q.get_peak_revenue_month,
     "get_avg_order_value_by_category": q.get_avg_order_value_by_category,
     "get_revenue_anomalies": q.get_revenue_anomalies,
+    "get_revenue_by_category": q.get_revenue_by_category,
+    "get_revenue_by_region": q.get_revenue_by_region,
+    "get_schema": sql_tool.get_schema,
+    "run_sql_query": sql_tool.run_sql_query,
 }

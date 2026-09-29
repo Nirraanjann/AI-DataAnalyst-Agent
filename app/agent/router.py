@@ -2,9 +2,10 @@
 app/agent/router.py
 
 Sends a natural-language business question to the LLM along with the
-9 Phase 2 tool schemas. The LLM picks (at most) one tool and args;
-this module extracts that choice without executing anything --
-execution happens in analyst_service.py.
+full tool schema list (11 Phase 2/4 analyst functions + 2 Phase 5 SQL
+fallback tools -- get_schema, run_sql_query). The LLM picks (at most)
+one tool and args; this module extracts that choice without executing
+anything -- execution happens in nodes.py / analyst_service.py.
 """
 
 from dataclasses import dataclass
@@ -22,7 +23,18 @@ knowledge -- always call a tool.
 Non-negotiable definition: revenue = SUM(order_items.price) for \
 orders where order_status = 'delivered' only. Freight is excluded. \
 If a question implies a different definition of revenue, still use \
-this definition.
+this definition -- this applies whether you're calling one of the \
+specific-purpose tools below or writing SQL yourself via \
+run_sql_query.
+
+Tool preference: get_schema and run_sql_query are a LAST RESORT. \
+Always prefer one of the other, specific-purpose tools whenever it \
+can answer the question -- they are pre-built, verified, and known \
+correct. Only reach for get_schema/run_sql_query when the question \
+genuinely cannot be answered by any specific-purpose tool (for \
+example, a direct numeric comparison across two periods that needs \
+one query to compute both totals and a difference in a single \
+result).
 
 If no tool genuinely answers the question, do not call the closest \
 one anyway -- respond with plain text explaining that no tool covers \

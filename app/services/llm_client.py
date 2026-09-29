@@ -24,6 +24,9 @@ import time
 from dataclasses import dataclass, field
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 _MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-lite-latest")
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"

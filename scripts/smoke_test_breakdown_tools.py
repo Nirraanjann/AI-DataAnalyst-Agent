@@ -13,3 +13,4 @@ print(f"Step count: {result['step_count']}")
 print(f"Tool calls made:")
 for call in result["tool_calls"]:
     print(f"  - {call}")
+    

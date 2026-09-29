@@ -13,6 +13,13 @@ endpoint in Phase 8) should call -- analogous to Phase 3's
 analyst_service.ask(), but returns the full GraphState rather than an
 AnalystResult, since there's now more to inspect (plan, tool_calls
 list, whether clarification was needed).
+
+Phase 5 update: default max_steps raised from 4 to 6, matching
+state.py's initial_state() default -- see that file's docstring for
+why. Both defaults are kept in sync deliberately since ask() always
+passes max_steps explicitly into initial_state(), so this file's
+default is the one that actually takes effect for any caller (like
+scripts/smoke_test_chain.py) that doesn't override it.
 """
 
 from langgraph.graph import END, StateGraph
@@ -57,7 +64,7 @@ def build_graph(engine: Engine):
     return graph.compile()
 
 
-def ask(question: str, engine: Engine, max_steps: int = 4) -> GraphState:
+def ask(question: str, engine: Engine, max_steps: int = 6) -> GraphState:
     """Run the agent end to end. Returns the final GraphState -- see
     app/agent/state.py for fields (final_answer, tool_calls,
     needs_clarification, declined, etc.)."""
